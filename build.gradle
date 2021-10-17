@@ -1,0 +1,63 @@
+plugins {
+    id 'java'
+}
+group 'io.jscott2k'
+version '1.0-SNAPSHOT'
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'Driver'
+        )
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        name 'm2-dv8tion'
+        url 'https://m2.dv8tion.net/releases'
+    }
+}
+dependencies {
+    //testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    implementation("net.dv8tion:JDA:4.3.0_277")
+    compile 'io.github.cdimascio:java-dotenv:5.2.2'
+    compile group: 'org.apache.httpcomponents' , name: 'httpclient' , version: '4.5.13'
+    compile group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1'
+
+
+}
+
+sourceCompatibility = 1.8
+
+tasks.register('uberJar', Jar) {
+    archiveClassifier = 'uber'
+    manifest.from jar.manifest
+    from sourceSets.main.output
+
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+    }
+
+}
+
+tasks.register("setEnv", Copy){
+    dependsOn tasks.uberJar
+    from ".env"
+    into "$buildDir/libs"
+}
+
+
+
+tasks.register("run", JavaExec){
+    dependsOn setEnv
+    classpath = uberJar.outputs.files
+    main = "Driver"
+    run {
+        standardInput(System.in)
+    }
+}
+
+tasks.named("build"){finalizedBy("setEnv")}
